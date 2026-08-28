@@ -1,0 +1,2836 @@
+```html
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>سباق الطريق</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #101820;
+        font-family: Tahoma, Arial, sans-serif;
+        touch-action: none;
+    }
+
+    body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #game {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        background: #17251b;
+    }
+
+    canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    #hud {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 5;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        padding: 10px;
+        pointer-events: none;
+    }
+
+    .hud-box {
+        min-width: 0;
+        padding: 7px 4px;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 13px;
+        background: rgba(8, 12, 15, 0.80);
+        backdrop-filter: blur(5px);
+        text-align: center;
+        color: white;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.18);
+    }
+
+    .hud-label {
+        display: block;
+        font-size: 9px;
+        color: #bfc8ce;
+        margin-bottom: 2px;
+    }
+
+    .hud-value {
+        display: block;
+        font-size: clamp(13px, 3.5vw, 22px);
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    #distanceValue {
+        color: #ffffff;
+    }
+
+    #multiplierValue {
+        color: #ffc400;
+    }
+
+    #scoreValue {
+        color: #6fe94d;
+    }
+
+    #bestValue {
+        color: #6fd8ff;
+    }
+
+    #abilityBar {
+        position: absolute;
+        top: 82px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 5;
+        display: flex;
+        gap: 8px;
+        pointer-events: none;
+    }
+
+    .ability {
+        display: none;
+        min-width: 105px;
+        padding: 7px 12px;
+        border-radius: 20px;
+        background: rgba(7, 12, 16, 0.82);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: white;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    #shieldStatus {
+        color: #61c7ff;
+    }
+
+    #slowStatus {
+        color: #c88cff;
+    }
+
+    .overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(0, 0, 0, 0.52);
+        overflow-y: auto;
+    }
+
+    .panel {
+        width: min(450px, 94vw);
+        max-height: 94vh;
+        overflow-y: auto;
+        padding: 28px 22px 25px;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 24px;
+        background: rgba(10, 15, 18, 0.96);
+        box-shadow: 0 20px 70px rgba(0,0,0,0.45);
+        text-align: center;
+        color: white;
+    }
+
+    .panel h1 {
+        margin: 0 0 9px;
+        font-size: clamp(30px, 8vw, 48px);
+        font-weight: 900;
+    }
+
+    .panel p {
+        margin: 0 0 18px;
+        color: #cbd2d6;
+        font-size: 15px;
+        line-height: 1.7;
+    }
+
+    .player-names {
+        display: grid;
+        gap: 9px;
+        margin: 15px 0;
+    }
+
+    .player-names input {
+        width: 100%;
+        height: 49px;
+        padding: 0 14px;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 13px;
+        outline: none;
+        background: rgba(255,255,255,0.08);
+        color: white;
+        font-size: 16px;
+        text-align: center;
+    }
+
+    .player-names input:focus {
+        border-color: #5eafff;
+        background: rgba(255,255,255,0.12);
+    }
+
+    .mode-title {
+        margin: 13px 0 7px;
+        color: #bfc8ce;
+        font-size: 13px;
+    }
+
+    .mode-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 17px;
+    }
+
+    .mode-btn {
+        min-height: 47px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.17);
+        background: rgba(255,255,255,0.08);
+        color: white;
+        font-size: 14px;
+        font-weight: 900;
+        box-shadow: none;
+    }
+
+    .mode-btn.selected {
+        background: #1769c5;
+        border-color: #58aaff;
+    }
+
+    .main-button {
+        width: 100%;
+        min-height: 58px;
+        border: 0;
+        border-radius: 16px;
+        background: linear-gradient(#38c93b, #15951d);
+        color: white;
+        font-size: 21px;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow:
+            inset 0 1px rgba(255,255,255,0.3),
+            0 6px 0 #0b6813,
+            0 13px 28px rgba(0,0,0,0.25);
+    }
+
+    .main-button:active {
+        transform: translateY(4px);
+        box-shadow:
+            inset 0 1px rgba(255,255,255,0.2),
+            0 2px 0 #0b6813,
+            0 7px 16px rgba(0,0,0,0.25);
+    }
+
+    #gameOverPanel h1 {
+        color: #ff4c38;
+    }
+
+    #gameOverText {
+        font-size: 17px;
+        line-height: 2;
+        margin-bottom: 13px;
+    }
+
+    #gameOverText strong {
+        color: #6fe94d;
+        font-size: 24px;
+    }
+
+    #turnMessage {
+        display: none;
+        margin: 10px 0 15px;
+        padding: 10px;
+        border-radius: 12px;
+        background: rgba(40,130,255,0.14);
+        color: #70bdff;
+        font-weight: 900;
+    }
+
+    #leaderboard {
+        margin: 17px 0;
+        text-align: right;
+    }
+
+    #leaderboard h2 {
+        margin: 0 0 9px;
+        text-align: center;
+        font-size: 19px;
+    }
+
+    .leader-row {
+        display: grid;
+        grid-template-columns: 34px 1fr 80px;
+        gap: 7px;
+        align-items: center;
+        padding: 7px 9px;
+        margin-bottom: 5px;
+        border-radius: 9px;
+        background: rgba(255,255,255,0.06);
+        font-size: 13px;
+    }
+
+    .leader-rank {
+        color: #ffc400;
+        font-weight: 900;
+        text-align: center;
+    }
+
+    .leader-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .leader-score {
+        text-align: left;
+        color: #6fe94d;
+        font-weight: 900;
+    }
+
+    #controls {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: max(16px, env(safe-area-inset-bottom));
+        z-index: 7;
+        display: flex;
+        justify-content: space-between;
+        padding: 0 17px;
+        pointer-events: none;
+    }
+
+    .control-btn {
+        width: clamp(72px, 18vw, 105px);
+        height: clamp(72px, 18vw, 105px);
+        min-height: 0;
+        border-radius: 24px;
+        border: 2px solid rgba(255,255,255,0.3);
+        background: rgba(15, 20, 23, 0.62);
+        backdrop-filter: blur(5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+    }
+
+    .control-btn span {
+        display: block;
+        color: white;
+        font-size: clamp(42px, 10vw, 60px);
+        line-height: 1;
+        font-family: Arial, sans-serif;
+        font-weight: 300;
+    }
+
+    .control-btn:active {
+        transform: scale(0.94);
+    }
+
+    #currentPlayerLabel {
+        position: absolute;
+        top: 124px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 5;
+        display: none;
+        padding: 5px 14px;
+        border-radius: 20px;
+        background: rgba(0,0,0,0.6);
+        color: white;
+        font-size: 12px;
+        font-weight: 900;
+        pointer-events: none;
+        white-space: nowrap;
+    }
+
+    @media (max-height: 650px) {
+        #hud {
+            padding: 6px;
+        }
+
+        #abilityBar {
+            top: 68px;
+        }
+
+        #currentPlayerLabel {
+            top: 106px;
+        }
+
+        #controls {
+            bottom: 8px;
+        }
+
+        .control-btn {
+            width: 64px;
+            height: 64px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+    <canvas id="canvas"></canvas>
+
+    <div id="hud">
+        <div class="hud-box">
+            <span class="hud-label">المسافة</span>
+            <span class="hud-value" id="distanceValue">0 م</span>
+        </div>
+
+        <div class="hud-box">
+            <span class="hud-label">السرعة</span>
+            <span class="hud-value" id="multiplierValue">×1.0</span>
+        </div>
+
+        <div class="hud-box">
+            <span class="hud-label">النقاط</span>
+            <span class="hud-value" id="scoreValue">0</span>
+        </div>
+
+        <div class="hud-box">
+            <span class="hud-label">أفضل نتيجة</span>
+            <span class="hud-value" id="bestValue">0</span>
+        </div>
+    </div>
+
+    <div id="abilityBar">
+        <div class="ability" id="shieldStatus">🛡️ الدرع جاهز</div>
+        <div class="ability" id="slowStatus">⏱️ تباطؤ: 3.0</div>
+    </div>
+
+    <div id="currentPlayerLabel"></div>
+
+    <div id="startPanel" class="overlay">
+        <div class="panel">
+            <h1>سباق الطريق</h1>
+
+            <p>
+                تجنّب السيارات واجمع النقاط والقدرات<br>
+                وحاول تحقيق أعلى نتيجة!
+            </p>
+
+            <div class="mode-title">نوع اللعب</div>
+
+            <div class="mode-buttons">
+                <button class="mode-btn selected" id="singleModeButton">
+                    لاعب واحد
+                </button>
+
+                <button class="mode-btn" id="twoModeButton">
+                    لاعبان بالتناوب
+                </button>
+            </div>
+
+            <div class="player-names">
+                <input
+                    id="player1Name"
+                    type="text"
+                    maxlength="18"
+                    placeholder="اسم اللاعب الأول"
+                    value="اللاعب 1"
+                >
+
+                <input
+                    id="player2Name"
+                    type="text"
+                    maxlength="18"
+                    placeholder="اسم اللاعب الثاني"
+                    value="اللاعب 2"
+                >
+            </div>
+
+            <button class="main-button" id="startButton">
+                ابدأ السباق
+            </button>
+
+            <div id="leaderboard"></div>
+        </div>
+    </div>
+
+    <div id="gameOverPanel" class="overlay" style="display:none;">
+        <div class="panel">
+            <h1 id="gameOverTitle">انتهت الجولة!</h1>
+
+            <div id="gameOverText"></div>
+
+            <div id="turnMessage"></div>
+
+            <div id="leaderboardEnd"></div>
+
+            <button class="main-button" id="restartButton">
+                تابع
+            </button>
+        </div>
+    </div>
+
+    <div id="controls">
+        <button class="control-btn" id="leftButton" aria-label="يسار">
+            <span>‹</span>
+        </button>
+
+        <button class="control-btn" id="rightButton" aria-label="يمين">
+            <span>›</span>
+        </button>
+    </div>
+
+</div>
+
+<script>
+/* =========================
+   Game configuration
+   ========================= */
+
+const INITIAL_SPEED = 360;
+const SPEED_INCREASE = 12;
+const MAX_SPEED = 900;
+const ROW_DISTANCE = 360;
+const LANE_COUNT = 3;
+
+const PLAYER_SPEED = 7.5;
+const MAX_FRAME_TIME = 0.05;
+
+const ROAD_WIDTH_RATIO = 0.68;
+const PLAYER_BOTTOM_RATIO = 0.14;
+
+const OBSTACLE_MIN_GAP = 135;
+
+const POINT_DISTANCE = 270;
+const POWERUP_DISTANCE = 620;
+
+const POWERUP_DURATION = 3;
+
+
+/* =========================
+   Canvas setup
+   ========================= */
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let width = 0;
+let height = 0;
+let dpr = 1;
+
+function resizeCanvas() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    width = window.innerWidth;
+    height = window.innerHeight;
+
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    updateRoad();
+    positionPlayerAfterResize();
+}
+
+window.addEventListener("resize", resizeCanvas);
+
+
+/* =========================
+   Road geometry
+   ========================= */
+
+let road = {
+    left: 0,
+    right: 0,
+    width: 0,
+    laneWidth: 0
+};
+
+function updateRoad() {
+    road.width = Math.min(width * ROAD_WIDTH_RATIO, 560);
+    road.left = (width - road.width) / 2;
+    road.right = road.left + road.width;
+    road.laneWidth = road.width / LANE_COUNT;
+}
+
+function laneCenter(lane) {
+    return road.left + road.laneWidth * lane + road.laneWidth / 2;
+}
+
+
+/* =========================
+   Game state
+   ========================= */
+
+let gameRunning = false;
+
+let player = {
+    lane: 1,
+    x: 0,
+    targetX: 0,
+    y: 0,
+    width: 52,
+    height: 92
+};
+
+let obstacles = [];
+let pickups = [];
+
+let speed = INITIAL_SPEED;
+let distance = 0;
+let score = 0;
+
+let spawnDistance = 0;
+let pickupDistance = 0;
+let pointDistance = 0;
+
+let roadLineOffset = 0;
+
+let shieldActive = false;
+let slowTimer = 0;
+
+let animationFrameId = null;
+let lastTime = 0;
+
+let touchStartX = null;
+
+let selectedMode = "single";
+
+let currentPlayerIndex = 0;
+let roundResults = [];
+
+let playerNames = [
+    "اللاعب 1",
+    "اللاعب 2"
+];
+
+
+/* =========================
+   Audio system
+   ========================= */
+
+let audioContext = null;
+
+function initAudio() {
+    if (!audioContext) {
+        const AudioContextClass =
+            window.AudioContext ||
+            window.webkitAudioContext;
+
+        if (AudioContextClass) {
+            audioContext = new AudioContextClass();
+        }
+    }
+
+    if (
+        audioContext &&
+        audioContext.state === "suspended"
+    ) {
+        audioContext.resume();
+    }
+}
+
+function playTone(
+    frequency,
+    duration,
+    type = "sine",
+    volume = 0.06,
+    slide = 0
+) {
+    if (!audioContext) {
+        return;
+    }
+
+    const oscillator =
+        audioContext.createOscillator();
+
+    const gain =
+        audioContext.createGain();
+
+    oscillator.type = type;
+
+    oscillator.frequency.setValueAtTime(
+        frequency,
+        audioContext.currentTime
+    );
+
+    if (slide !== 0) {
+        oscillator.frequency.linearRampToValueAtTime(
+            frequency + slide,
+            audioContext.currentTime + duration
+        );
+    }
+
+    gain.gain.setValueAtTime(
+        volume,
+        audioContext.currentTime
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioContext.currentTime + duration
+    );
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start();
+
+    oscillator.stop(
+        audioContext.currentTime + duration
+    );
+}
+
+function playCollectSound() {
+    playTone(700, 0.08, "sine", 0.07, 250);
+
+    setTimeout(function() {
+        playTone(1050, 0.10, "sine", 0.05, 200);
+    }, 55);
+}
+
+function playShieldSound() {
+    playTone(380, 0.10, "triangle", 0.07, 300);
+    setTimeout(function() {
+        playTone(680, 0.16, "triangle", 0.06, 400);
+    }, 70);
+}
+
+function playSlowSound() {
+    playTone(550, 0.12, "sine", 0.06, -180);
+    setTimeout(function() {
+        playTone(350, 0.20, "sine", 0.05, -100);
+    }, 100);
+}
+
+function playCollisionSound() {
+    playTone(110, 0.22, "sawtooth", 0.12, -70);
+
+    setTimeout(function() {
+        playTone(70, 0.28, "square", 0.08, -30);
+    }, 70);
+}
+
+function playGameOverSound() {
+    playTone(330, 0.15, "triangle", 0.07, -100);
+
+    setTimeout(function() {
+        playTone(220, 0.25, "triangle", 0.07, -80);
+    }, 150);
+
+    setTimeout(function() {
+        playTone(130, 0.35, "triangle", 0.06, -50);
+    }, 370);
+}
+
+
+/* =========================
+   Leaderboard
+   ========================= */
+
+function getLeaderboard() {
+    try {
+        const saved =
+            localStorage.getItem("roadRaceLeaderboard");
+
+        if (!saved) {
+            return [];
+        }
+
+        const parsed = JSON.parse(saved);
+
+        return Array.isArray(parsed)
+            ? parsed
+            : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveLeaderboard(entries) {
+    try {
+        localStorage.setItem(
+            "roadRaceLeaderboard",
+            JSON.stringify(entries)
+        );
+    } catch (error) {
+        /* Storage may be unavailable */
+    }
+}
+
+function addLeaderboardEntry(name, value) {
+    const entries = getLeaderboard();
+
+    entries.push({
+        name: name || "لاعب",
+        score: Math.floor(value),
+        date: Date.now()
+    });
+
+    entries.sort(function(a, b) {
+        return b.score - a.score;
+    });
+
+    const topEntries = entries.slice(0, 10);
+
+    saveLeaderboard(topEntries);
+
+    return topEntries;
+}
+
+function renderLeaderboard(targetId) {
+    const target =
+        document.getElementById(targetId);
+
+    if (!target) {
+        return;
+    }
+
+    const entries = getLeaderboard();
+
+    if (entries.length === 0) {
+        target.innerHTML =
+            "<h2>🏆 أفضل النتائج</h2>" +
+            "<p>لا توجد نتائج محفوظة بعد</p>";
+
+        return;
+    }
+
+    let html =
+        "<h2>🏆 أفضل النتائج</h2>";
+
+    entries.forEach(function(entry, index) {
+        html +=
+            '<div class="leader-row">' +
+                '<div class="leader-rank">' +
+                    (index + 1) +
+                "</div>" +
+                '<div class="leader-name">' +
+                    escapeHtml(entry.name) +
+                "</div>" +
+                '<div class="leader-score">' +
+                    Math.floor(entry.score) +
+                    " م" +
+                "</div>" +
+            "</div>";
+    });
+
+    target.innerHTML = html;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+/* =========================
+   Session best
+   ========================= */
+
+let bestScore =
+    Number(sessionStorage.getItem("roadRaceBest") || 0);
+
+
+/* =========================
+   Reset all round state
+   ========================= */
+
+function resetRound() {
+    speed = INITIAL_SPEED;
+    distance = 0;
+    score = 0;
+
+    spawnDistance = 0;
+    pickupDistance = 0;
+    pointDistance = 0;
+
+    roadLineOffset = 0;
+
+    obstacles = [];
+    pickups = [];
+
+    shieldActive = false;
+    slowTimer = 0;
+
+    player.lane = 1;
+    player.x = laneCenter(1);
+    player.targetX = laneCenter(1);
+
+    updatePlayerGeometry();
+
+    lastTime = 0;
+
+    updateAbilityUI();
+}
+
+
+/* =========================
+   Player geometry
+   ========================= */
+
+function updatePlayerGeometry() {
+    player.width =
+        Math.min(54, road.laneWidth * 0.52);
+
+    player.height =
+        player.width * 1.78;
+
+    player.y =
+        height - height * PLAYER_BOTTOM_RATIO;
+
+    player.x = Math.max(
+        road.left + player.width / 2,
+        Math.min(
+            road.right - player.width / 2,
+            player.x
+        )
+    );
+
+    player.targetX =
+        laneCenter(player.lane);
+}
+
+function positionPlayerAfterResize() {
+    updatePlayerGeometry();
+
+    if (!gameRunning) {
+        player.x = player.targetX;
+    }
+}
+
+
+/* =========================
+   Start and stop game loop
+   ========================= */
+
+function startGame() {
+    initAudio();
+
+    stopGameLoop();
+
+    resetRound();
+
+    gameRunning = true;
+
+    document.getElementById("startPanel").style.display = "none";
+    document.getElementById("gameOverPanel").style.display = "none";
+
+    updateCurrentPlayerLabel();
+
+    lastTime = performance.now();
+
+    scheduleNextFrame();
+}
+
+function stopGameLoop() {
+    if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+}
+
+function scheduleNextFrame() {
+    if (!gameRunning) {
+        return;
+    }
+
+    if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+    }
+
+    animationFrameId =
+        requestAnimationFrame(gameLoop);
+}
+
+
+/* =========================
+   Main game loop
+   ========================= */
+
+function gameLoop(now) {
+    animationFrameId = null;
+
+    if (!gameRunning) {
+        return;
+    }
+
+    if (!lastTime) {
+        lastTime = now;
+    }
+
+    let dt =
+        (now - lastTime) / 1000;
+
+    lastTime = now;
+
+    dt = Math.min(
+        dt,
+        MAX_FRAME_TIME
+    );
+
+    update(dt);
+    draw();
+
+    if (gameRunning) {
+        scheduleNextFrame();
+    }
+}
+
+
+/* =========================
+   Game update
+   ========================= */
+
+function update(dt) {
+    speed = Math.min(
+        MAX_SPEED,
+        speed + SPEED_INCREASE * dt
+    );
+
+    distance +=
+        speed * dt / 10;
+
+    roadLineOffset +=
+        speed * dt;
+
+    const movementFactor =
+        1 - Math.exp(-PLAYER_SPEED * dt);
+
+    player.x +=
+        (player.targetX - player.x) *
+        movementFactor;
+
+    player.x = Math.max(
+        road.left + player.width / 2,
+        Math.min(
+            road.right - player.width / 2,
+            player.x
+        )
+    );
+
+    spawnDistance += speed * dt;
+
+    if (spawnDistance >= ROW_DISTANCE) {
+        spawnDistance -= ROW_DISTANCE;
+        spawnObstacleRow();
+    }
+
+    pointDistance += speed * dt;
+
+    if (pointDistance >= POINT_DISTANCE) {
+        pointDistance -= POINT_DISTANCE;
+        spawnPoint();
+    }
+
+    pickupDistance += speed * dt;
+
+    if (pickupDistance >= POWERUP_DISTANCE) {
+        pickupDistance -= POWERUP_DISTANCE;
+        spawnPowerup();
+    }
+
+    if (slowTimer > 0) {
+        slowTimer -= dt;
+
+        if (slowTimer <= 0) {
+            slowTimer = 0;
+        }
+    }
+
+    const enemyFactor =
+        slowTimer > 0 ? 0.38 : 1;
+
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        const obstacle = obstacles[i];
+
+        obstacle.y +=
+            speed * dt * enemyFactor;
+
+        if (
+            obstacle.y - obstacle.height >
+            height + 30
+        ) {
+            obstacles.splice(i, 1);
+            continue;
+        }
+
+        if (checkCollision(player, obstacle)) {
+            handleObstacleCollision(i);
+            return;
+        }
+    }
+
+    for (let i = pickups.length - 1; i >= 0; i--) {
+        const pickup = pickups[i];
+
+        pickup.y +=
+            speed * dt * enemyFactor;
+
+        pickup.rotation +=
+            dt * 3;
+
+        if (pickup.y - pickup.size > height + 30) {
+            pickups.splice(i, 1);
+            continue;
+        }
+
+        if (checkPickupCollision(pickup)) {
+            collectPickup(i);
+        }
+    }
+
+    updateHUD();
+    updateAbilityUI();
+}
+
+
+/* =========================
+   Obstacle generation
+   ========================= */
+
+function spawnObstacleRow() {
+    const blockedLanes = [];
+
+    const blockCount =
+        Math.random() < 0.65 ? 2 : 1;
+
+    const available = [0, 1, 2];
+
+    while (blockedLanes.length < blockCount) {
+        const index =
+            Math.floor(
+                Math.random() *
+                available.length
+            );
+
+        blockedLanes.push(
+            available[index]
+        );
+
+        available.splice(index, 1);
+    }
+
+    const rowY = -120;
+
+    blockedLanes.forEach(function(lane, index) {
+        const obstacleWidth =
+            Math.min(
+                52,
+                road.laneWidth * 0.50
+            );
+
+        const obstacleHeight =
+            obstacleWidth * 1.78;
+
+        obstacles.push({
+            lane: lane,
+            x: laneCenter(lane),
+            y:
+                rowY +
+                index * OBSTACLE_MIN_GAP,
+            width: obstacleWidth,
+            height: obstacleHeight,
+            type:
+                Math.floor(
+                    Math.random() * 4
+                )
+        });
+    });
+}
+
+
+/* =========================
+   Point generation
+   ========================= */
+
+function spawnPoint() {
+    const lane =
+        Math.floor(
+            Math.random() * LANE_COUNT
+        );
+
+    pickups.push({
+        type: "point",
+        lane: lane,
+        x: laneCenter(lane),
+        y: -35,
+        size: Math.min(
+            25,
+            road.laneWidth * 0.25
+        ),
+        rotation: 0,
+        value: 100
+    });
+}
+
+
+/* =========================
+   Powerup generation
+   ========================= */
+
+function spawnPowerup() {
+    const lane =
+        Math.floor(
+            Math.random() * LANE_COUNT
+        );
+
+    const type =
+        Math.random() < 0.5
+            ? "shield"
+            : "slow";
+
+    pickups.push({
+        type: type,
+        lane: lane,
+        x: laneCenter(lane),
+        y: -40,
+        size: Math.min(
+            31,
+            road.laneWidth * 0.32
+        ),
+        rotation: 0,
+        value: 0
+    });
+}
+
+
+/* =========================
+   Collision handling
+   ========================= */
+
+function handleObstacleCollision(index) {
+    if (shieldActive) {
+        shieldActive = false;
+
+        obstacles.splice(index, 1);
+
+        playShieldSound();
+
+        score += 50;
+
+        updateAbilityUI();
+
+        return;
+    }
+
+    playCollisionSound();
+
+    endGame();
+}
+
+function checkCollision(a, b) {
+    const shrinkX = 0.18;
+    const shrinkY = 0.14;
+
+    const aLeft =
+        a.x -
+        a.width / 2 +
+        a.width * shrinkX;
+
+    const aRight =
+        a.x +
+        a.width / 2 -
+        a.width * shrinkX;
+
+    const aTop =
+        a.y -
+        a.height / 2 +
+        a.height * shrinkY;
+
+    const aBottom =
+        a.y +
+        a.height / 2 -
+        a.height * shrinkY;
+
+    const bLeft =
+        b.x -
+        b.width / 2 +
+        b.width * shrinkX;
+
+    const bRight =
+        b.x +
+        b.width / 2 -
+        b.width * shrinkX;
+
+    const bTop =
+        b.y -
+        b.height / 2 +
+        b.height * shrinkY;
+
+    const bBottom =
+        b.y +
+        b.height / 2 -
+        b.height * shrinkY;
+
+    return (
+        aLeft < bRight &&
+        aRight > bLeft &&
+        aTop < bBottom &&
+        aBottom > bTop
+    );
+}
+
+
+/* =========================
+   Pickup collision
+   ========================= */
+
+function checkPickupCollision(pickup) {
+    const dx =
+        Math.abs(player.x - pickup.x);
+
+    const dy =
+        Math.abs(player.y - pickup.y);
+
+    return (
+        dx <
+        player.width * 0.45 +
+        pickup.size * 0.7 &&
+        dy <
+        player.height * 0.42 +
+        pickup.size * 0.7
+    );
+}
+
+function collectPickup(index) {
+    const pickup = pickups[index];
+
+    pickups.splice(index, 1);
+
+    playCollectSound();
+
+    if (pickup.type === "point") {
+        score += pickup.value;
+        return;
+    }
+
+    if (pickup.type === "shield") {
+        shieldActive = true;
+        playShieldSound();
+        updateAbilityUI();
+        return;
+    }
+
+    if (pickup.type === "slow") {
+        slowTimer = POWERUP_DURATION;
+        playSlowSound();
+        updateAbilityUI();
+    }
+}
+
+
+/* =========================
+   Player movement
+   ========================= */
+
+function movePlayer(direction) {
+    if (!gameRunning) {
+        return;
+    }
+
+    player.lane += direction;
+
+    player.lane = Math.max(
+        0,
+        Math.min(
+            LANE_COUNT - 1,
+            player.lane
+        )
+    );
+
+    player.targetX =
+        laneCenter(player.lane);
+}
+
+
+/* =========================
+   End game
+   ========================= */
+
+function endGame() {
+    if (!gameRunning) {
+        return;
+    }
+
+    gameRunning = false;
+
+    stopGameLoop();
+
+    playGameOverSound();
+
+    const finalDistance =
+        Math.floor(distance);
+
+    const finalScore =
+        Math.floor(
+            distance + score
+        );
+
+    if (finalDistance > bestScore) {
+        bestScore = finalDistance;
+
+        try {
+            sessionStorage.setItem(
+                "roadRaceBest",
+                String(bestScore)
+            );
+        } catch (error) {
+            /* Session storage may be unavailable */
+        }
+    }
+
+    const playerName =
+        playerNames[currentPlayerIndex] ||
+        "لاعب";
+
+    addLeaderboardEntry(
+        playerName,
+        finalScore
+    );
+
+    roundResults[currentPlayerIndex] = {
+        name: playerName,
+        distance: finalDistance,
+        score: finalScore
+    };
+
+    document.getElementById("distanceValue").textContent =
+        finalDistance + " م";
+
+    document.getElementById("scoreValue").textContent =
+        finalScore;
+
+    document.getElementById("bestValue").textContent =
+        Math.floor(bestScore);
+
+    showEndPanel(finalDistance, finalScore);
+}
+
+
+/* =========================
+   End panel
+   ========================= */
+
+function showEndPanel(finalDistance, finalScore) {
+    const title =
+        document.getElementById("gameOverTitle");
+
+    const text =
+        document.getElementById("gameOverText");
+
+    const turnMessage =
+        document.getElementById("turnMessage");
+
+    const button =
+        document.getElementById("restartButton");
+
+    if (
+        selectedMode === "two" &&
+        currentPlayerIndex === 0
+    ) {
+        title.textContent =
+            "انتهت جولة اللاعب الأول!";
+
+        text.innerHTML =
+            "اللاعب: <strong>" +
+            escapeHtml(
+                playerNames[0]
+            ) +
+            "</strong><br>" +
+            "المسافة: <strong>" +
+            finalDistance +
+            " م</strong><br>" +
+            "النقاط: <strong>" +
+            finalScore +
+            "</strong>";
+
+        turnMessage.style.display = "block";
+
+        turnMessage.textContent =
+            "دور اللاعب الثاني الآن";
+
+        button.textContent =
+            "ابدأ دور اللاعب الثاني";
+    } else if (
+        selectedMode === "two" &&
+        currentPlayerIndex === 1
+    ) {
+        const first =
+            roundResults[0];
+
+        const second =
+            roundResults[1];
+
+        let winnerText =
+            "تعادل!";
+
+        if (
+            second.score >
+            first.score
+        ) {
+            winnerText =
+                "🏆 الفائز: " +
+                second.name;
+        } else if (
+            first.score >
+            second.score
+        ) {
+            winnerText =
+                "🏆 الفائز: " +
+                first.name;
+        }
+
+        title.textContent =
+            "انتهت المباراة!";
+
+        text.innerHTML =
+            escapeHtml(
+                first.name
+            ) +
+            ": <strong>" +
+            first.score +
+            " نقطة</strong><br>" +
+
+            escapeHtml(
+                second.name
+            ) +
+            ": <strong>" +
+            second.score +
+            " نقطة</strong><br><br>" +
+
+            winnerText;
+
+        turnMessage.style.display =
+            "none";
+
+        button.textContent =
+            "لعب مباراة جديدة";
+    } else {
+        title.textContent =
+            "انتهت الجولة!";
+
+        text.innerHTML =
+            "اللاعب: <strong>" +
+            escapeHtml(
+                playerNameSafe()
+            ) +
+            "</strong><br>" +
+
+            "المسافة: <strong>" +
+            finalDistance +
+            " م</strong><br>" +
+
+            "النقاط: <strong>" +
+            finalScore +
+            "</strong>";
+
+        turnMessage.style.display =
+            "none";
+
+        button.textContent =
+            "العب مجدداً";
+    }
+
+    renderLeaderboard("leaderboardEnd");
+
+    document.getElementById(
+        "gameOverPanel"
+    ).style.display = "flex";
+}
+
+function playerNameSafe() {
+    return (
+        playerNames[currentPlayerIndex] ||
+        "لاعب"
+    );
+}
+
+
+/* =========================
+   Continue / restart
+   ========================= */
+
+function continueGame() {
+    initAudio();
+
+    document.getElementById(
+        "gameOverPanel"
+    ).style.display = "none";
+
+    if (
+        selectedMode === "two" &&
+        currentPlayerIndex === 0
+    ) {
+        currentPlayerIndex = 1;
+
+        updateCurrentPlayerLabel();
+
+        startGame();
+
+        return;
+    }
+
+    if (
+        selectedMode === "two" &&
+        currentPlayerIndex === 1
+    ) {
+        currentPlayerIndex = 0;
+        roundResults = [];
+
+        updateStartPanel();
+
+        document.getElementById(
+            "startPanel"
+        ).style.display = "flex";
+
+        renderLeaderboard("leaderboard");
+
+        return;
+    }
+
+    startGame();
+}
+
+
+/* =========================
+   HUD
+   ========================= */
+
+function updateHUD() {
+    document.getElementById(
+        "distanceValue"
+    ).textContent =
+        Math.floor(distance) + " م";
+
+    const multiplier =
+        speed / INITIAL_SPEED;
+
+    document.getElementById(
+        "multiplierValue"
+    ).textContent =
+        "×" +
+        multiplier.toFixed(1);
+
+    document.getElementById(
+        "scoreValue"
+    ).textContent =
+        Math.floor(
+            distance + score
+        );
+
+    document.getElementById(
+        "bestValue"
+    ).textContent =
+        Math.floor(bestScore);
+}
+
+
+/* =========================
+   Ability UI
+   ========================= */
+
+function updateAbilityUI() {
+    const shield =
+        document.getElementById(
+            "shieldStatus"
+        );
+
+    const slow =
+        document.getElementById(
+            "slowStatus"
+        );
+
+    shield.style.display =
+        shieldActive
+            ? "block"
+            : "none";
+
+    slow.style.display =
+        slowTimer > 0
+            ? "block"
+            : "none";
+
+    if (slowTimer > 0) {
+        slow.textContent =
+            "⏱️ تباطؤ: " +
+            slowTimer.toFixed(1);
+    }
+}
+
+
+/* =========================
+   Current player label
+   ========================= */
+
+function updateCurrentPlayerLabel() {
+    const label =
+        document.getElementById(
+            "currentPlayerLabel"
+        );
+
+    if (
+        selectedMode === "two"
+    ) {
+        label.style.display =
+            "block";
+
+        label.textContent =
+            "دور: " +
+            playerNames[
+                currentPlayerIndex
+            ];
+    } else {
+        label.style.display =
+            "none";
+    }
+}
+
+
+/* =========================
+   Drawing
+   ========================= */
+
+function draw() {
+    ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+    drawBackground();
+    drawRoad();
+    drawRoadLines();
+
+    for (const pickup of pickups) {
+        drawPickup(pickup);
+    }
+
+    for (const obstacle of obstacles) {
+        drawCar(
+            obstacle.x,
+            obstacle.y,
+            obstacle.width,
+            obstacle.height,
+            obstacle.type,
+            false
+        );
+    }
+
+    drawCar(
+        player.x,
+        player.y,
+        player.width,
+        player.height,
+        0,
+        true
+    );
+
+    if (shieldActive) {
+        drawShield();
+    }
+}
+
+
+/* =========================
+   Background
+   ========================= */
+
+function drawBackground() {
+    ctx.fillStyle = "#285c28";
+
+    ctx.fillRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+    drawGrassDetails();
+}
+
+function drawGrassDetails() {
+    const spacing = 90;
+
+    for (
+        let y = -20;
+        y < height + spacing;
+        y += spacing
+    ) {
+        const offset =
+            Math.sin(y * 0.03) * 25;
+
+        drawSmallTree(
+            road.left / 2 + offset,
+            y + 30
+        );
+
+        drawSmallTree(
+            road.right +
+            (width - road.right) / 2 -
+            offset,
+            y + 65
+        );
+    }
+}
+
+function drawSmallTree(x, y) {
+    ctx.save();
+
+    ctx.fillStyle = "#674025";
+
+    ctx.fillRect(
+        x - 4,
+        y + 8,
+        8,
+        18
+    );
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x,
+        y,
+        17,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle = "#1e4d20";
+    ctx.fill();
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x - 8,
+        y + 3,
+        12,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle = "#2e702d";
+    ctx.fill();
+
+    ctx.beginPath();
+
+    ctx.arc(
+        x + 8,
+        y + 4,
+        12,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle = "#347b32";
+    ctx.fill();
+
+    ctx.restore();
+}
+
+
+/* =========================
+   Road
+   ========================= */
+
+function drawRoad() {
+    ctx.fillStyle = "#292d31";
+
+    ctx.fillRect(
+        road.left,
+        0,
+        road.width,
+        height
+    );
+
+    const gradient =
+        ctx.createLinearGradient(
+            road.left,
+            0,
+            road.right,
+            0
+        );
+
+    gradient.addColorStop(
+        0,
+        "rgba(0,0,0,0.25)"
+    );
+
+    gradient.addColorStop(
+        0.18,
+        "rgba(255,255,255,0.025)"
+    );
+
+    gradient.addColorStop(
+        0.5,
+        "rgba(255,255,255,0.06)"
+    );
+
+    gradient.addColorStop(
+        0.82,
+        "rgba(255,255,255,0.025)"
+    );
+
+    gradient.addColorStop(
+        1,
+        "rgba(0,0,0,0.25)"
+    );
+
+    ctx.fillStyle = gradient;
+
+    ctx.fillRect(
+        road.left,
+        0,
+        road.width,
+        height
+    );
+
+    ctx.fillStyle = "#f1bd24";
+
+    ctx.fillRect(
+        road.left + 4,
+        0,
+        4,
+        height
+    );
+
+    ctx.fillRect(
+        road.right - 8,
+        0,
+        4,
+        height
+    );
+
+    ctx.fillStyle = "#899096";
+
+    ctx.fillRect(
+        road.left,
+        0,
+        3,
+        height
+    );
+
+    ctx.fillRect(
+        road.right - 3,
+        0,
+        3,
+        height
+    );
+}
+
+
+/* =========================
+   Moving road lines
+   ========================= */
+
+function drawRoadLines() {
+    const dashHeight = 55;
+    const gap = 40;
+    const cycle =
+        dashHeight + gap;
+
+    const offset =
+        roadLineOffset % cycle;
+
+    ctx.save();
+
+    ctx.fillStyle =
+        "rgba(235,238,239,0.85)";
+
+    for (
+        let lane = 1;
+        lane < LANE_COUNT;
+        lane++
+    ) {
+        const x =
+            road.left +
+            road.laneWidth * lane;
+
+        for (
+            let y =
+                -cycle + offset;
+            y < height + cycle;
+            y += cycle
+        ) {
+            ctx.fillRect(
+                x - 2,
+                y,
+                4,
+                dashHeight
+            );
+        }
+    }
+
+    ctx.restore();
+}
+
+
+/* =========================
+   Pickup drawing
+   ========================= */
+
+function drawPickup(pickup) {
+    ctx.save();
+
+    ctx.translate(
+        pickup.x,
+        pickup.y
+    );
+
+    ctx.rotate(
+        pickup.rotation
+    );
+
+    if (pickup.type === "point") {
+        drawCoin(
+            pickup.size
+        );
+    } else if (
+        pickup.type === "shield"
+    ) {
+        drawShieldIcon(
+            pickup.size
+        );
+    } else {
+        drawSlowIcon(
+            pickup.size
+        );
+    }
+
+    ctx.restore();
+}
+
+function drawCoin(size) {
+    ctx.beginPath();
+
+    ctx.arc(
+        0,
+        0,
+        size,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle = "#ffc400";
+    ctx.fill();
+
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#fff1a1";
+    ctx.stroke();
+
+    ctx.fillStyle = "#9b6d00";
+
+    ctx.font =
+        "900 " +
+        Math.max(
+            11,
+            size
+        ) +
+        "px Arial";
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.fillText(
+        "+",
+        0,
+        1
+    );
+}
+
+function drawShieldIcon(size) {
+    ctx.beginPath();
+
+    ctx.moveTo(
+        0,
+        -size
+    );
+
+    ctx.lineTo(
+        size * 0.8,
+        -size * 0.45
+    );
+
+    ctx.lineTo(
+        size * 0.58,
+        size * 0.55
+    );
+
+    ctx.lineTo(
+        0,
+        size
+    );
+
+    ctx.lineTo(
+        -size * 0.58,
+        size * 0.55
+    );
+
+    ctx.lineTo(
+        -size * 0.8,
+        -size * 0.45
+    );
+
+    ctx.closePath();
+
+    ctx.fillStyle = "#2b9cff";
+    ctx.fill();
+
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#bce5ff";
+    ctx.stroke();
+
+    ctx.fillStyle = "white";
+
+    ctx.font =
+        "900 " +
+        Math.max(
+            11,
+            size * 0.75
+        ) +
+        "px Arial";
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.fillText(
+        "S",
+        0,
+        2
+    );
+}
+
+function drawSlowIcon(size) {
+    ctx.beginPath();
+
+    ctx.arc(
+        0,
+        0,
+        size,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle = "#a84cff";
+    ctx.fill();
+
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#e0b9ff";
+    ctx.stroke();
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        0,
+        -size * 0.48
+    );
+
+    ctx.lineTo(
+        0,
+        0
+    );
+
+    ctx.lineTo(
+        size * 0.35,
+        size * 0.22
+    );
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+}
+
+
+/* =========================
+   Shield effect
+   ========================= */
+
+function drawShield() {
+    const radius =
+        Math.max(
+            player.width,
+            player.height
+        ) * 0.67;
+
+    const pulse =
+        1 +
+        Math.sin(
+            performance.now() * 0.006
+        ) * 0.04;
+
+    ctx.save();
+
+    ctx.beginPath();
+
+    ctx.arc(
+        player.x,
+        player.y,
+        radius * pulse,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.strokeStyle =
+        "rgba(80,190,255,0.78)";
+
+    ctx.lineWidth = 4;
+
+    ctx.stroke();
+
+    ctx.beginPath();
+
+    ctx.arc(
+        player.x,
+        player.y,
+        radius * 0.88 * pulse,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.strokeStyle =
+        "rgba(120,220,255,0.20)";
+
+    ctx.lineWidth = 8;
+
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+
+/* =========================
+   Car drawing
+   ========================= */
+
+function drawCar(
+    x,
+    y,
+    carWidth,
+    carHeight,
+    type,
+    isPlayer
+) {
+    ctx.save();
+
+    ctx.translate(
+        x,
+        y
+    );
+
+    const w = carWidth;
+    const h = carHeight;
+
+    let bodyColor;
+
+    if (isPlayer) {
+        bodyColor = "#1687ff";
+    } else {
+        const colors = [
+            "#e53935",
+            "#ffb300",
+            "#8e44ad",
+            "#eeeeee"
+        ];
+
+        bodyColor =
+            colors[
+                type %
+                colors.length
+            ];
+    }
+
+    /* Shadow */
+    ctx.beginPath();
+
+    ctx.ellipse(
+        0,
+        h * 0.05,
+        w * 0.53,
+        h * 0.50,
+        0,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle =
+        "rgba(0,0,0,0.35)";
+
+    ctx.fill();
+
+    /* Main body */
+    roundRect(
+        -w / 2,
+        -h / 2,
+        w,
+        h,
+        w * 0.20
+    );
+
+    ctx.fillStyle =
+        bodyColor;
+
+    ctx.fill();
+
+    /* Body highlight */
+    roundRect(
+        -w * 0.39,
+        -h * 0.43,
+        w * 0.78,
+        h * 0.86,
+        w * 0.16
+    );
+
+    ctx.fillStyle =
+        bodyColor;
+
+    ctx.fill();
+
+    /* Windows */
+    roundRect(
+        -w * 0.31,
+        -h * 0.29,
+        w * 0.62,
+        h * 0.25,
+        w * 0.09
+    );
+
+    ctx.fillStyle =
+        "#17212a";
+
+    ctx.fill();
+
+    roundRect(
+        -w * 0.31,
+        h * 0.04,
+        w * 0.62,
+        h * 0.20,
+        w * 0.08
+    );
+
+    ctx.fillStyle =
+        "#17212a";
+
+    ctx.fill();
+
+    /* Window reflection */
+    ctx.fillStyle =
+        "rgba(255,255,255,0.18)";
+
+    ctx.fillRect(
+        -w * 0.22,
+        -h * 0.25,
+        w * 0.15,
+        h * 0.14
+    );
+
+    /* Player stripe */
+    if (isPlayer) {
+        ctx.fillStyle =
+            "rgba(255,255,255,0.92)";
+
+        ctx.fillRect(
+            -w * 0.08,
+            -h * 0.47,
+            w * 0.16,
+            h * 0.94
+        );
+    }
+
+    /* Wheels */
+    drawWheel(
+        -w * 0.54,
+        -h * 0.29,
+        w,
+        h
+    );
+
+    drawWheel(
+        w * 0.54,
+        -h * 0.29,
+        w,
+        h
+    );
+
+    drawWheel(
+        -w * 0.54,
+        h * 0.29,
+        w,
+        h
+    );
+
+    drawWheel(
+        w * 0.54,
+        h * 0.29,
+        w,
+        h
+    );
+
+    /* Lights */
+    ctx.fillStyle =
+        isPlayer
+            ? "#ff2b2b"
+            : "#fff3c4";
+
+    roundRect(
+        -w * 0.31,
+        -h * 0.47,
+        w * 0.18,
+        h * 0.07,
+        3
+    );
+
+    ctx.fill();
+
+    roundRect(
+        w * 0.13,
+        -h * 0.47,
+        w * 0.18,
+        h * 0.07,
+        3
+    );
+
+    ctx.fill();
+
+    ctx.fillStyle =
+        isPlayer
+            ? "#fff0d0"
+            : "#ff3c30";
+
+    roundRect(
+        -w * 0.31,
+        h * 0.40,
+        w * 0.18,
+        h * 0.07,
+        3
+    );
+
+    ctx.fill();
+
+    roundRect(
+        w * 0.13,
+        h * 0.40,
+        w * 0.18,
+        h * 0.07,
+        3
+    );
+
+    ctx.fill();
+
+    ctx.restore();
+}
+
+
+/* =========================
+   Car wheel
+   ========================= */
+
+function drawWheel(
+    x,
+    y,
+    w,
+    h
+) {
+    ctx.save();
+
+    ctx.translate(
+        x,
+        y
+    );
+
+    roundRect(
+        -w * 0.07,
+        -h * 0.12,
+        w * 0.14,
+        h * 0.24,
+        w * 0.03
+    );
+
+    ctx.fillStyle =
+        "#101214";
+
+    ctx.fill();
+
+    ctx.restore();
+}
+
+
+/* =========================
+   Rounded rectangle
+   ========================= */
+
+function roundRect(
+    x,
+    y,
+    w,
+    h,
+    radius
+) {
+    radius =
+        Math.min(
+            radius,
+            Math.abs(w) / 2,
+            Math.abs(h) / 2
+        );
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        x + radius,
+        y
+    );
+
+    ctx.lineTo(
+        x + w - radius,
+        y
+    );
+
+    ctx.quadraticCurveTo(
+        x + w,
+        y,
+        x + w,
+        y + radius
+    );
+
+    ctx.lineTo(
+        x + w,
+        y + h - radius
+    );
+
+    ctx.quadraticCurveTo(
+        x + w,
+        y + h,
+        x + w - radius,
+        y + h
+    );
+
+    ctx.lineTo(
+        x + radius,
+        y + h
+    );
+
+    ctx.quadraticCurveTo(
+        x,
+        y + h,
+        x,
+        y + h - radius
+    );
+
+    ctx.lineTo(
+        x,
+        y + radius
+    );
+
+    ctx.quadraticCurveTo(
+        x,
+        y,
+        x + radius,
+        y
+    );
+
+    ctx.closePath();
+}
+
+
+/* =========================
+   Keyboard controls
+   ========================= */
+
+window.addEventListener(
+    "keydown",
+    function(event) {
+        if (
+            event.key === "ArrowLeft"
+        ) {
+            event.preventDefault();
+            movePlayer(-1);
+        }
+
+        if (
+            event.key === "ArrowRight"
+        ) {
+            event.preventDefault();
+            movePlayer(1);
+        }
+
+        if (
+            event.key === "a" ||
+            event.key === "A"
+        ) {
+            event.preventDefault();
+            movePlayer(-1);
+        }
+
+        if (
+            event.key === "d" ||
+            event.key === "D"
+        ) {
+            event.preventDefault();
+            movePlayer(1);
+        }
+
+        if (
+            event.key === "Enter" &&
+            !gameRunning
+        ) {
+            const startPanel =
+                document.getElementById(
+                    "startPanel"
+                );
+
+            const gameOverPanel =
+                document.getElementById(
+                    "gameOverPanel"
+                );
+
+            if (
+                startPanel.style.display !==
+                "none"
+            ) {
+                startGame();
+            } else if (
+                gameOverPanel.style.display !==
+                "none"
+            ) {
+                continueGame();
+            }
+        }
+    }
+);
+
+
+/* =========================
+   Button controls
+   ========================= */
+
+document.getElementById(
+    "leftButton"
+).addEventListener(
+    "pointerdown",
+    function(event) {
+        event.preventDefault();
+        movePlayer(-1);
+    }
+);
+
+document.getElementById(
+    "rightButton"
+).addEventListener(
+    "pointerdown",
+    function(event) {
+        event.preventDefault();
+        movePlayer(1);
+    }
+);
+
+
+/* =========================
+   Swipe controls
+   ========================= */
+
+canvas.addEventListener(
+    "pointerdown",
+    function(event) {
+        touchStartX =
+            event.clientX;
+    }
+);
+
+canvas.addEventListener(
+    "pointerup",
+    function(event) {
+        if (
+            touchStartX === null
+        ) {
+            return;
+        }
+
+        const deltaX =
+            event.clientX -
+            touchStartX;
+
+        touchStartX = null;
+
+        if (
+            Math.abs(deltaX) < 30
+        ) {
+            return;
+        }
+
+        if (deltaX < 0) {
+            movePlayer(-1);
+        } else {
+            movePlayer(1);
+        }
+    }
+);
+
+canvas.addEventListener(
+    "pointercancel",
+    function() {
+        touchStartX = null;
+    }
+);
+
+
+/* =========================
+   Mode selection
+   ========================= */
+
+document.getElementById(
+    "singleModeButton"
+).addEventListener(
+    "click",
+    function() {
+        selectedMode = "single";
+
+        this.classList.add("selected");
+
+        document.getElementById(
+            "twoModeButton"
+        ).classList.remove("selected");
+
+        document.getElementById(
+            "player2Name"
+        ).style.display = "none";
+    }
+);
+
+document.getElementById(
+    "twoModeButton"
+).addEventListener(
+    "click",
+    function() {
+        selectedMode = "two";
+
+        this.classList.add("selected");
+
+        document.getElementById(
+            "singleModeButton"
+        ).classList.remove("selected");
+
+        document.getElementById(
+            "player2Name"
+        ).style.display = "block";
+    }
+);
+
+
+/* =========================
+   Start button
+   ========================= */
+
+document.getElementById(
+    "startButton"
+).addEventListener(
+    "click",
+    function() {
+        initAudio();
+
+        playerNames[0] =
+            document.getElementById(
+                "player1Name"
+            ).value.trim() ||
+            "اللاعب 1";
+
+        playerNames[1] =
+            document.getElementById(
+                "player2Name"
+            ).value.trim() ||
+            "اللاعب 2";
+
+        currentPlayerIndex = 0;
+        roundResults = [];
+
+        startGame();
+    }
+);
+
+
+/* =========================
+   Restart button
+   ========================= */
+
+document.getElementById(
+    "restartButton"
+).addEventListener(
+    "click",
+    function() {
+        continueGame();
+    }
+);
+
+
+/* =========================
+   Start panel update
+   ========================= */
+
+function updateStartPanel() {
+    document.getElementById(
+        "player1Name"
+    ).value =
+        playerNames[0];
+
+    document.getElementById(
+        "player2Name"
+    ).value =
+        playerNames[1];
+}
+
+
+/* =========================
+   Initial setup
+   ========================= */
+
+resizeCanvas();
+
+resetRound();
+
+updateHUD();
+
+renderLeaderboard(
+    "leaderboard"
+);
+
+document.getElementById(
+    "player2Name"
+).style.display = "none";
+
+draw();
+</script>
+
+</body>
+</html>
+```
